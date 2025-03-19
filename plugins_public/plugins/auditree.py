@@ -21,6 +21,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import yaml
 from concurrent import futures
@@ -44,6 +45,9 @@ from c2p.framework.api.proto.models_pb2 import (
     PVPResult,
     Subject,
 )
+from grpc_health.v1.health import HealthServicer
+from grpc_health.v1 import health_pb2, health_pb2_grpc
+
 
 logger = getLogger(__name__)
 
@@ -194,6 +198,7 @@ class PluginAuditree(PluginSpec):
 
 
 class AuditreeServicer(pb2_grpc.PolicyEngineServicer):
+    """Implementation of Auditree service."""
 
     def __init__(self):
         self.config: Dict = {}
@@ -218,16 +223,20 @@ class AuditreeServicer(pb2_grpc.PolicyEngineServicer):
     ) -> policy_pb2.ResultsResponse:
         """Implemented GetResults."""
 
-        # Here to run Auditree fetcher and checks using the auditree config created
-        # in the Generate() step and get the check result, check_results.json
+        # Here to run Auditree fetch and check using the auditree config created
+        # in the Generate() step and get the check result in check_results.json.
         # Example:
         # $ compliance --fetch --evidence local -C auditree.json -v
         # $ compliance --check demo.arboretum.accred,demo.custom.accred --evidence local -C auditree.json -v
-        tmp_path = '/tmp'
+        tmp_path = "/tmp"
+        auditree_json = ""
         for d in os.listdir(tmp_path):
             if d.startswith('auditree'):
                 auditree_json = os.path.join(tmp_path, d, "auditree.json")
                 break
+        if not os.path.isfile(auditree_json):
+            return policy_pb2.ResultsResponse()
+
         command_fetch = [
                 "compliance",
                 "--fetch",
@@ -262,23 +271,26 @@ class AuditreeServicer(pb2_grpc.PolicyEngineServicer):
         return policy_pb2.ResultsResponse(result=pvp_result)
 
 
-def create_server(uds_address):
+def serve(uds_address):
+    # Build a health service to work with the plugin
+    health = HealthServicer()
+    health.set("plugin", health_pb2.HealthCheckResponse.ServingStatus.Value('SERVING'))
+
     server = grpc.server(futures.ThreadPoolExecutor())
     pb2_grpc.add_PolicyEngineServicer_to_server(AuditreeServicer(), server)
+    health_pb2_grpc.add_HealthServicer_to_server(health, server)
+    # Listen on a port
     server.add_insecure_port(uds_address)
-    return server
-
-
-def serve(server):
     server.start()
+
+    # Output information
+    handshake_info = f"1|0.5.0|tcp|{uds_address}|grpc"
+    print(handshake_info)
+    sys.stdout.flush()
+
     server.wait_for_termination()
 
 
-def main():
-    uds_address = os.environ.get("UDS_ADDRESS")
-    server = create_server(uds_address)
-    serve(server)
-
-
 if __name__ == "__main__":
-    main()
+    uds_address = os.environ.get("UDS_ADDRESS")
+    serve(uds_address)

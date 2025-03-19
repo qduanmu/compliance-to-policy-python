@@ -3,7 +3,7 @@
 
 
 """
-Run C2P with the OpenSCAP plugin
+Run C2P with the Auditree plugin
 """
 
 import logging
@@ -129,6 +129,6 @@ class ComplyTimeClient:
 
 if __name__ == "__main__":
     uds_address = os.environ.get("UDS_ADDRESS")
-    c = ComplyTimeClient(uds_address)  
+    c = ComplyTimeClient(uds_address)
     c.generate()
     c.get_results()
