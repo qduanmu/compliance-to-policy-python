@@ -25,7 +25,7 @@ _sym_db = _symbol_database.Default()
 from c2p.framework.api.proto import models_pb2 as c2p_dot_framework_dot_api_dot_proto_dot_models__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n$c2p/framework/api/proto/policy.proto\x12\tprotocols\x1a$c2p/framework/api/proto/models.proto\".\n\rPolicyRequest\x12\x1d\n\x04rule\x18\x01 \x03(\x0b\x32\x0f.protocols.Rule\"\x12\n\x10GenerateResponse\"7\n\x0fResultsResponse\x12$\n\x06result\x18\x01 \x01(\x0b\x32\x14.protocols.PVPResult2\x95\x01\n\x0cPolicyEngine\x12\x41\n\x08Generate\x12\x18.protocols.PolicyRequest\x1a\x1b.protocols.GenerateResponse\x12\x42\n\nGetResults\x12\x18.protocols.PolicyRequest\x1a\x1a.protocols.ResultsResponseB@Z>github.com/oscal-compass/compliance-to-policy-go/v2/api/proto/b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n$c2p/framework/api/proto/policy.proto\x12\tprotocols\x1a$c2p/framework/api/proto/models.proto\".\n\rPolicyRequest\x12\x1d\n\x04rule\x18\x01 \x03(\x0b\x32\x0f.protocols.Rule\"\x12\n\x10GenerateResponse\"7\n\x0fResultsResponse\x12$\n\x06result\x18\x01 \x01(\x0b\x32\x14.protocols.PVPResult\"\x80\x01\n\x10\x43onfigureRequest\x12;\n\x08settings\x18\x01 \x03(\x0b\x32).protocols.ConfigureRequest.SettingsEntry\x1a/\n\rSettingsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\x13\n\x11\x43onfigureResponse2\xdd\x01\n\x0cPolicyEngine\x12\x41\n\x08Generate\x12\x18.protocols.PolicyRequest\x1a\x1b.protocols.GenerateResponse\x12\x42\n\nGetResults\x12\x18.protocols.PolicyRequest\x1a\x1a.protocols.ResultsResponse\x12\x46\n\tConfigure\x12\x1b.protocols.ConfigureRequest\x1a\x1c.protocols.ConfigureResponseB@Z>github.com/oscal-compass/compliance-to-policy-go/v2/api/proto/b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,12 +33,20 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'c2p.framework.api.proto.pol
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'Z>github.com/oscal-compass/compliance-to-policy-go/v2/api/proto/'
+  _globals['_CONFIGUREREQUEST_SETTINGSENTRY']._loaded_options = None
+  _globals['_CONFIGUREREQUEST_SETTINGSENTRY']._serialized_options = b'8\001'
   _globals['_POLICYREQUEST']._serialized_start=89
   _globals['_POLICYREQUEST']._serialized_end=135
   _globals['_GENERATERESPONSE']._serialized_start=137
   _globals['_GENERATERESPONSE']._serialized_end=155
   _globals['_RESULTSRESPONSE']._serialized_start=157
   _globals['_RESULTSRESPONSE']._serialized_end=212
-  _globals['_POLICYENGINE']._serialized_start=215
-  _globals['_POLICYENGINE']._serialized_end=364
+  _globals['_CONFIGUREREQUEST']._serialized_start=215
+  _globals['_CONFIGUREREQUEST']._serialized_end=343
+  _globals['_CONFIGUREREQUEST_SETTINGSENTRY']._serialized_start=296
+  _globals['_CONFIGUREREQUEST_SETTINGSENTRY']._serialized_end=343
+  _globals['_CONFIGURERESPONSE']._serialized_start=345
+  _globals['_CONFIGURERESPONSE']._serialized_end=364
+  _globals['_POLICYENGINE']._serialized_start=367
+  _globals['_POLICYENGINE']._serialized_end=588
 # @@protoc_insertion_point(module_scope)
