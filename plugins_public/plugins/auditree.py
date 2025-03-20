@@ -259,8 +259,10 @@ class AuditreeServicer(pb2_grpc.PolicyEngineServicer):
         ]
         subprocess.run(command_check, cwd='demo')
         shutil.rmtree(os.path.dirname(auditree_json), ignore_errors=True)
-        check_results = '/tmp/compliance/check_results.json'
-        check_results = yaml.safe_load(Path(check_results).open('r'))
+        check_results_file = '/tmp/compliance/check_results.json'
+        if not os.path.exists(check_results_file):
+            return policy_pb2.ResultsResponse()
+        check_results = yaml.safe_load(Path(check_results_file).open('r'))
         pvp_raw_result = RawResult(
             data=check_results,
             additional_props={
@@ -285,6 +287,8 @@ def serve(uds_address):
 
     # Output information
     handshake_info = f"1|0.5.0|tcp|{uds_address}|grpc"
+    # Output the handshake information to stdout, this is required for go-plugin.
+    # go-plugin reads a single line from stdout to determine how to connect to the plugin.
     print(handshake_info)
     sys.stdout.flush()
 
