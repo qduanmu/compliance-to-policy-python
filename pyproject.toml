@@ -29,6 +29,8 @@ dependencies = [
   "PyGithub==1.58.0",
   "jq==1.6.0",
   "pluggy",
+  "grpcio",
+  "grpcio-health-checking",
 ]
 
 [project.scripts]

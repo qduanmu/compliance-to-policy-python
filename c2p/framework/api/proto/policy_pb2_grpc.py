@@ -45,6 +45,11 @@ class PolicyEngineStub(object):
                 request_serializer=c2p_dot_framework_dot_api_dot_proto_dot_policy__pb2.PolicyRequest.SerializeToString,
                 response_deserializer=c2p_dot_framework_dot_api_dot_proto_dot_policy__pb2.ResultsResponse.FromString,
                 _registered_method=True)
+        self.Configure = channel.unary_unary(
+                '/protocols.PolicyEngine/Configure',
+                request_serializer=c2p_dot_framework_dot_api_dot_proto_dot_policy__pb2.ConfigureRequest.SerializeToString,
+                response_deserializer=c2p_dot_framework_dot_api_dot_proto_dot_policy__pb2.ConfigureResponse.FromString,
+                _registered_method=True)
 
 
 class PolicyEngineServicer(object):
@@ -63,6 +68,12 @@ class PolicyEngineServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def Configure(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_PolicyEngineServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -75,6 +86,11 @@ def add_PolicyEngineServicer_to_server(servicer, server):
                     servicer.GetResults,
                     request_deserializer=c2p_dot_framework_dot_api_dot_proto_dot_policy__pb2.PolicyRequest.FromString,
                     response_serializer=c2p_dot_framework_dot_api_dot_proto_dot_policy__pb2.ResultsResponse.SerializeToString,
+            ),
+            'Configure': grpc.unary_unary_rpc_method_handler(
+                    servicer.Configure,
+                    request_deserializer=c2p_dot_framework_dot_api_dot_proto_dot_policy__pb2.ConfigureRequest.FromString,
+                    response_serializer=c2p_dot_framework_dot_api_dot_proto_dot_policy__pb2.ConfigureResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -132,6 +148,33 @@ class PolicyEngine(object):
             '/protocols.PolicyEngine/GetResults',
             c2p_dot_framework_dot_api_dot_proto_dot_policy__pb2.PolicyRequest.SerializeToString,
             c2p_dot_framework_dot_api_dot_proto_dot_policy__pb2.ResultsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Configure(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/protocols.PolicyEngine/Configure',
+            c2p_dot_framework_dot_api_dot_proto_dot_policy__pb2.ConfigureRequest.SerializeToString,
+            c2p_dot_framework_dot_api_dot_proto_dot_policy__pb2.ConfigureResponse.FromString,
             options,
             channel_credentials,
             insecure,
