@@ -268,7 +268,7 @@ class AuditreeServicer(pb2_grpc.PolicyEngineServicer):
         check_results = yaml.safe_load(Path(check_results_file).open('r'))
         pvp_raw_result = RawResult(
             data=check_results,
-            # Here local evidence instead of remote evidence is used
+            # Uncomment below to add locker_url when remote evidence is used
             # additional_props={
             #     'locker_url': self.config.get('locker_url'),
             # },
@@ -277,7 +277,7 @@ class AuditreeServicer(pb2_grpc.PolicyEngineServicer):
         return policy_pb2.ResultsResponse(result=pvp_result)
 
 
-def serve(uds_address):
+def serve(auditree_port):
     # Build a health service to work with the plugin
     health = HealthServicer()
     health.set("plugin", health_pb2.HealthCheckResponse.ServingStatus.Value('SERVING'))
@@ -286,11 +286,12 @@ def serve(uds_address):
     pb2_grpc.add_PolicyEngineServicer_to_server(AuditreeServicer(), server)
     health_pb2_grpc.add_HealthServicer_to_server(health, server)
     # Listen on a port
-    server.add_insecure_port(uds_address)
+    service_address = f'127.0.0.1:{auditree_port}'
+    server.add_insecure_port(service_address)
     server.start()
 
     # Output information
-    handshake_info = f"1|1|tcp|{uds_address}|grpc"
+    handshake_info = f"1|1|tcp|{service_address}|grpc"
     # Output the handshake information to stdout, this is required for go-plugin.
     # go-plugin reads a single line from stdout to determine how to connect to the plugin.
     print(handshake_info)
@@ -300,5 +301,5 @@ def serve(uds_address):
 
 
 if __name__ == "__main__":
-    uds_address = os.environ.get("UDS_ADDRESS")
-    serve(uds_address)
+    auditree_port = os.environ.get("AUDITREE_PORT")
+    serve(auditree_port)
