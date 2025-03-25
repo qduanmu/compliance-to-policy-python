@@ -19,10 +19,8 @@ import grpc
 import json
 import os
 import re
-import shutil
 import subprocess
 import sys
-import tempfile
 import yaml
 from concurrent import futures
 from datetime import datetime, timezone
@@ -204,13 +202,20 @@ class AuditreeServicer(pb2_grpc.PolicyEngineServicer):
         self.config: Dict = {}
         self.plugin_id = "Auditree"
 
+    def Configure(
+        self, request: policy_pb2.ConfigureRequest, context
+    ) -> policy_pb2.ConfigureResponse:
+        """Implemented Configure"""
+        self.config = request.settings
+        return policy_pb2.ConfigureResponse()
+
     def Generate(
         self, request: policy_pb2.PolicyRequest, context
     ) -> policy_pb2.GenerateResponse:
         """Implemented Generate"""
-        auditree_template = "demo/auditree.template.json"
-        tempdir = tempfile.mkdtemp(prefix="auditree_")
-        generated_auditree_json = os.path.join(tempdir, 'auditree.json')
+        auditree_dir = self.config.get('auditree_data')
+        auditree_template = os.path.join(auditree_dir, "auditree.template.json")
+        generated_auditree_json = os.path.join(auditree_dir, 'auditree.json')
         config = PluginConfigAuditree(
             auditree_json_template=auditree_template, output=generated_auditree_json
         )
@@ -228,28 +233,25 @@ class AuditreeServicer(pb2_grpc.PolicyEngineServicer):
         # Example:
         # $ compliance --fetch --evidence local -C auditree.json -v
         # $ compliance --check demo.arboretum.accred,demo.custom.accred --evidence local -C auditree.json -v
-        tmp_path = "/tmp"
-        auditree_json = ""
-        for d in os.listdir(tmp_path):
-            if d.startswith('auditree'):
-                auditree_json = os.path.join(tmp_path, d, "auditree.json")
-                break
+        auditree_dir = self.config.get('auditree_data')
+        auditree_json = os.path.join(auditree_dir, 'auditree.json')
         if not os.path.isfile(auditree_json):
             return policy_pb2.ResultsResponse()
 
+        compliance_cmd = self.config.get('compliance_cmd')
         command_fetch = [
-                "compliance",
+                compliance_cmd,
                 "--fetch",
                 "--evidence",
                 "local",
                 "-C",
                 auditree_json,
         ]
-        subprocess.run(command_fetch, cwd='demo')
+        subprocess.run(command_fetch, cwd=auditree_dir)
 
         # locker and result are in /tmp/compliance
         command_check = [
-                "compliance",
+                compliance_cmd,
                 "--check",
                 "demo.arboretum.accred,demo.custom.accred",
                 "--evidence",
@@ -257,23 +259,25 @@ class AuditreeServicer(pb2_grpc.PolicyEngineServicer):
                 "-C",
                 auditree_json,
         ]
-        subprocess.run(command_check, cwd='demo')
-        shutil.rmtree(os.path.dirname(auditree_json), ignore_errors=True)
+        subprocess.run(command_check, cwd=auditree_dir)
+        os.remove(auditree_json)
+
         check_results_file = '/tmp/compliance/check_results.json'
         if not os.path.exists(check_results_file):
             return policy_pb2.ResultsResponse()
         check_results = yaml.safe_load(Path(check_results_file).open('r'))
         pvp_raw_result = RawResult(
             data=check_results,
-            additional_props={
-                'locker_url': 'https://github.com/MY_ORG/MY_EVIDENCE_REPO',
-            },
+            # Uncomment below to add locker_url when remote evidence is used
+            # additional_props={
+            #     'locker_url': self.config.get('locker_url'),
+            # },
         )
         pvp_result = PluginAuditree().generate_pvp_result(pvp_raw_result)
         return policy_pb2.ResultsResponse(result=pvp_result)
 
 
-def serve(uds_address):
+def serve(auditree_port):
     # Build a health service to work with the plugin
     health = HealthServicer()
     health.set("plugin", health_pb2.HealthCheckResponse.ServingStatus.Value('SERVING'))
@@ -282,11 +286,12 @@ def serve(uds_address):
     pb2_grpc.add_PolicyEngineServicer_to_server(AuditreeServicer(), server)
     health_pb2_grpc.add_HealthServicer_to_server(health, server)
     # Listen on a port
-    server.add_insecure_port(uds_address)
+    service_address = f'127.0.0.1:{auditree_port}'
+    server.add_insecure_port(service_address)
     server.start()
 
     # Output information
-    handshake_info = f"1|0.5.0|tcp|{uds_address}|grpc"
+    handshake_info = f"1|1|tcp|{service_address}|grpc"
     # Output the handshake information to stdout, this is required for go-plugin.
     # go-plugin reads a single line from stdout to determine how to connect to the plugin.
     print(handshake_info)
@@ -296,5 +301,5 @@ def serve(uds_address):
 
 
 if __name__ == "__main__":
-    uds_address = os.environ.get("UDS_ADDRESS")
-    serve(uds_address)
+    auditree_port = os.environ.get("AUDITREE_PORT")
+    serve(auditree_port)
