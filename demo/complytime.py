@@ -24,6 +24,9 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
+# Need to update value of below variables according to your local env
+AUDITREE_DATA_DIR = 'ABSPATH_TO_AUDITREE_DATA_DIR'
+COMPLIANCE_CMD = 'ABSPATH_TO_COMPLIANCE_COMMAND'
 
 
 class ComplyTimeClient:
@@ -33,7 +36,7 @@ class ComplyTimeClient:
 
     def __init__(
         self,
-        address: str,
+        auditree_port: str,
         component_definition: str = "demo/component-definition.json"
     ):
         """
@@ -43,13 +46,18 @@ class ComplyTimeClient:
             Location of the product component definition to evaluate
         """
         self.component_definition = component_definition
-        self.address = address
+        self.auditree_port = auditree_port
+        self.service_address = f'127.0.0.1:{auditree_port}'
+        self.auditree_config = {
+            'auditree_data': AUDITREE_DATA_DIR,
+            'compliance_cmd': COMPLIANCE_CMD,
+        }
 
     def _start_process(self) -> subprocess.Popen:
         try:
             command = "python plugins_public/plugins/auditree.py"
             environment = os.environ.copy()
-            environment["UDS_ADDRESS"] = self.address
+            environment["AUDITREE_PORT"] = self.auditree_port
             process = subprocess.Popen(command, shell=True, env=environment)
             logging.info(f"Process started with PID: {process.pid}")
             time.sleep(5)
@@ -69,6 +77,12 @@ class ComplyTimeClient:
                 process.kill()
         else:
             logging.info("Process is already terminated or not running.")
+
+    def configure(self) -> None:
+        with grpc.insecure_channel(self.service_address) as channel:
+            stub = pb2_grpc.PolicyEngineStub(channel)
+            req = policy_pb2.ConfigureRequest(settings=self.auditree_config)
+            stub.Configure(req)
 
     def generate(self) -> None:
         """
@@ -93,10 +107,10 @@ class ComplyTimeClient:
                 rule.checks.append(check)
                 rules.append(rule)
 
-            req = policy_pb2.PolicyRequest(rule=rules)
-            with grpc.insecure_channel(self.address) as channel:
+            self.configure()
+            with grpc.insecure_channel(self.service_address) as channel:
                 stub = pb2_grpc.PolicyEngineStub(channel)
-                # resp: policy_pb2.GenerateResponse = stub.Generate(req)
+                req = policy_pb2.PolicyRequest(rule=rules)
                 stub.Generate(req)
         finally:
             self._kill_process(process)
@@ -108,9 +122,10 @@ class ComplyTimeClient:
             c2p_config = self._create_c2p_config()
             c2p = C2P(c2p_config)
 
-            req = policy_pb2.PolicyRequest()
-            with grpc.insecure_channel(self.address) as channel:
+            self.configure()
+            with grpc.insecure_channel(self.service_address) as channel:
                 stub = pb2_grpc.PolicyEngineStub(channel)
+                req = policy_pb2.PolicyRequest()
                 resp: policy_pb2.ResultsResponse = stub.GetResults(req)
                 print(resp.result)
                 c2p.set_pvp_result(resp.result)
@@ -128,7 +143,7 @@ class ComplyTimeClient:
 
 
 if __name__ == "__main__":
-    uds_address = os.environ.get("UDS_ADDRESS")
-    c = ComplyTimeClient(uds_address)
+    auditree_port = os.environ.get("AUDITREE_PORT")
+    c = ComplyTimeClient(auditree_port)
     c.generate()
     c.get_results()
